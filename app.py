@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import IntegrityError
 from data_models import db, Author, Book
 
 # Create an instance of the Flask application
@@ -27,7 +28,32 @@ db.init_app(app)
 
 @app.route('/')
 def home():
-    return "Welcome to BookAlchemy!"
+    # Get the sorting criterion from the request arguments
+    sort_by = request.args.get('sort_by', 'title')  # Default to sorting by title
+
+    # Query books and their authors with sorting
+    sort_by = request.args.get('sort_by', 'title')
+    if sort_by == 'author':
+        books = Book.query.join(Author).order_by(Author.name).all()
+    elif sort_by == 'title':
+        books = Book.query.order_by(Book.title).all()
+    else:
+        books = Book.query.all()
+
+    # Prepare data for rendering
+    books_data = []
+    for book in books:
+        author_name = book.author.name if book.author else 'Unknown'
+        # Get cover image URL based on ISBN
+        cover_image_url = f"https://covers.openlibrary.org/b/isbn/{book.isbn}-M.jpg?default=false"
+
+        books_data.append({
+            'title': book.title,
+            'author': author_name,
+            'cover_image_url': cover_image_url
+        })
+
+    return render_template('home.html', books=books_data)
 
 
 @app.route('/add_author', methods=['GET', 'POST'])
@@ -72,16 +98,21 @@ def add_book():
 
         # Add the new book to the database
         db.session.add(new_book)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            message = "A book with that ISBN already exists."
+            authors = Author.query.all()  # Fetch all authors from the database
+            return render_template('add_book.html', authors=authors, message=message)
 
-        # Provide feedback to the user
-        message = "Book added successfully!"
-
-        return render_template('add_book.html', message=message)
+        # Redirect to the add book page to reset the form
+        return redirect(url_for('add_book', message="Book added successfully!"))
 
     # If it's a GET request, render the form
     authors = Author.query.all()  # Fetch all authors from the database
-    return render_template('add_book.html', authors=authors)
+    message = request.args.get('message', '')
+    return render_template('add_book.html', authors=authors, message=message or None)
 
 
 # Run the application

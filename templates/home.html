@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Home Page</title>
+      <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <h1>Library Home Page</h1>
+
+    <form method="get" action="/">
+        <label for="sort_by">Sort by:</label>
+        <select name="sort_by" id="sort_by">
+            <option value="title">Title</option>
+            <option value="author">Author</option>
+        </select>
+        <button type="submit">Sort</button>
+    </form>
+
+
+    <ul class="books container">
+    {% for book in books %}
+    <li class="book">
+        {% if book.cover_image_url %}
+        <img class="book-cover" src="{{ book.cover_image_url }}" alt="Book Cover">
+        {% endif %}
+        <h3>{{ book.title }}</h3>
+        <p>Author: {{ book.author }}</p>
+    </li>
+    {% endfor %}
+    </ul>
+
+  </body>
+</html>
